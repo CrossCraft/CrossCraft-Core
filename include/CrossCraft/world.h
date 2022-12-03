@@ -21,16 +21,21 @@ void CrossCraft_World_Deinit();
 void CrossCraft_World_Create_Map(uint8_t size);
 
 /**
- * This method should ONLY be used by a client.
+ * This method should ONLY be used by a client in single-player or a server for internal use.
  * @return Returns a pointer to the level
  */
 LevelMap* CrossCraft_World_GetMapPtr();
 
 /**
+ * @brief Spawn the player into the world
+ */
+void CrossCraft_World_Spawn();
+
+/**
  * @brief Tries to load a world
  * @returns If the world was loaded
  */
-bool CrossCraft_World_TryLoad(uint8_t slot);
+bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix);
 
 /**
  * @brief Generates the world
@@ -38,10 +43,6 @@ bool CrossCraft_World_TryLoad(uint8_t slot);
  */
 void CrossCraft_World_GenerateMap();
 
-/**
- * @brief Spawn the player into the world
- */
-void CrossCraft_World_Spawn();
 
 #ifdef __cplusplus
 };

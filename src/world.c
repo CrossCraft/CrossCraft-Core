@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
+#include <string.h>
 
 static Level level;
 
@@ -111,16 +112,79 @@ void CrossCraft_World_Create_Map(uint8_t size) {
     level.map.data = calloc(sizeof(uint8_t), blockCount);
 }
 
+#include <nbt.h>
+
 /**
  * @brief Tries to load a world
  * @returns If the world was loaded
  */
-bool CrossCraft_World_TryLoad(uint8_t slot) {
+bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
+    char buf[256] = {};
+
+    strcpy(buf, prefix);
+    strcat(buf, "save.ccc");
+
+    FILE* fptr = fopen(buf, "r");
+    if(fptr) {
+        slot = 5;
+        // TODO: Load and convert
+
+        fclose(fptr);
+        return true;
+    }
+
     if(slot >= 5) {
         return false;
     }
-    //TODO: Load World NBT
-    return false;
+    sprintf(buf, "%slevel%d.mclevel", prefix, slot);
+
+    CC_Internal_Log_Message(CC_LOG_INFO, "Attempting load.");
+    CC_Internal_Log_Message(CC_LOG_DEBUG, buf);
+
+    nbt_node* root = nbt_parse_path(buf);
+
+    if(root == NULL) {
+        CC_Internal_Log_Message(CC_LOG_WARN, "Could not load!");
+        return false;
+    }
+
+    nbt_node* abt = nbt_find_by_name(root, "About");
+
+    if(abt != NULL) {
+        level.about.name = nbt_find_by_name(abt, "Name")->payload.tag_string;
+        level.about.author = nbt_find_by_name(abt, "Author")->payload.tag_string;
+        level.about.createdOn = nbt_find_by_name(abt, "CreatedOn")->payload.tag_long;
+
+        CC_Internal_Log_Message(CC_LOG_TRACE, level.about.name);
+        CC_Internal_Log_Message(CC_LOG_TRACE, level.about.author);
+    }
+
+    nbt_node *map = nbt_find_by_name(root, "Map");
+    if(map != NULL) {
+        level.map.width = nbt_find_by_name(map, "Width")->payload.tag_short;
+        level.map.length = nbt_find_by_name(map, "Length")->payload.tag_short;
+        level.map.height = nbt_find_by_name(map, "Height")->payload.tag_short;
+
+        nbt_node* spawn = nbt_find_by_name(map, "Spawn");
+
+        level.map.spawnX = nbt_list_item(spawn, 0)->payload.tag_short;
+        level.map.spawnY = nbt_list_item(spawn, 1)->payload.tag_short;
+        level.map.spawnZ = nbt_list_item(spawn, 2)->payload.tag_short;
+
+
+        uint32_t blockCount = level.map.length * level.map.height * level.map.width;
+        level.map.blocks = malloc(blockCount);
+        level.map.data = malloc(blockCount);
+
+        struct nbt_byte_array byteArray = nbt_find_by_name(map, "Blocks")->payload.tag_byte_array;
+        memcpy(level.map.blocks, byteArray.data, blockCount);
+        byteArray = nbt_find_by_name(map, "Data")->payload.tag_byte_array;
+        memcpy(level.map.data, byteArray.data, blockCount);
+    }
+
+    nbt_free(root);
+
+    return true;
 }
 
 /**

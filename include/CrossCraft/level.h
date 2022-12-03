@@ -70,17 +70,17 @@ inline void GetXYZFromPos(uint32_t pos, uint32_t* x, uint32_t* y, uint32_t* z) {
 }
 
 inline uint8_t GetDataFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
-    uint32_t index = (y * map->height + z) * map->width + x;
+    uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
     return map->data[index];
 }
 
 inline uint8_t GetBlockFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
-    uint32_t index = (y * map->height + z) * map->width + x;
+    uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
     return map->blocks[index];
 }
 
 inline void SetBlockInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z, uint8_t block) {
-    uint32_t index = (y * map->height + z) * map->width + x;
+    uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
     map->blocks[index] = block;
 }
 
