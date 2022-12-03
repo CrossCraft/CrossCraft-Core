@@ -79,6 +79,11 @@ inline uint8_t GetBlockFromMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z
     return map->blocks[index];
 }
 
+inline void SetBlockInMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z, uint8_t block) {
+    uint32_t index = (y * map->height + z) * map->width + x;
+    map->blocks[index] = block;
+}
+
 inline bool BoundCheckMap(LevelMap* map, uint16_t x, uint16_t y, uint16_t z) {
     return (x < map->length && y < map->height && z < map->width);
 }
