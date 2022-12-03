@@ -399,9 +399,9 @@ bool isSpaceForTree(LevelMap* map, int x, int y, int z, int treeHeight) {
     }
 
     // Check if the trunk region is empty
-    for (int i = x - 1; i <= x + 1; i++) {
+    for (int i = x - 2; i <= x + 2; i++) {
         for (int j = y; j < y + treeHeight; j++) {
-            for (int k = z - 1; k <= z + 1; k++) {
+            for (int k = z - 2; k <= z + 2; k++) {
                 if (BoundCheckMap(map, i, j, k) && GetBlockFromMap(map, i, j, k) != 0) {
                     return false;
                 }
