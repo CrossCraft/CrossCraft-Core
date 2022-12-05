@@ -119,7 +119,7 @@ void CrossCraft_World_Create_Map(uint8_t size) {
  * @returns If the world was loaded
  */
 bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
-    char buf[256] = {};
+    char buf[256] = {0};
 
     strcpy(buf, prefix);
     strcat(buf, "save.ccc");

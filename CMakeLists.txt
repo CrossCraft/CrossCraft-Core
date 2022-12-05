@@ -17,5 +17,8 @@ target_include_directories(CNBT PUBLIC ext/zlib)
 
 add_library(CCCore ${SRC_FILES} ${INC_FILES})
 target_include_directories(CCCore PUBLIC include ext/cnbt/ ext/zlib/)
-target_compile_options(CCCore PRIVATE -Wall -Werror -Wextra)
+
+if(NOT MSVC)
+    target_compile_options(CCCore PRIVATE -Wall -Werror -Wextra)
+endif()
 target_link_libraries(CCCore PRIVATE CNBT)

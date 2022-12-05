@@ -2,6 +2,8 @@
 #include <CrossCraft/worldgen.h>
 #include <CrossCraft/log.h>
 #include <FastNoiseLite.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 #include <stdlib.h>
 
 static fnl_state state;
