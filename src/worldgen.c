@@ -382,7 +382,7 @@ void create_shrooms(LevelMap* map, int16_t* heightmap) {
                 fy += (rand() % 2) - (rand() % 2);
                 fz += (rand() % 6) - (rand() % 6);
 
-                if (BoundCheckMap(map, fx, fy, fz) && fy < heightmap[fx + fz * map->length] - 1) {
+                if (BoundCheckMap(map, fx, fy, fz) && BoundCheckMap(map, fx, fy - 1, fz) && fy < heightmap[fx + fz * map->length] - 1) {
                     uint8_t blockBelow = GetBlockFromMap(map, fx, fy - 1, fz);
 
                     if (GetBlockFromMap(map, fx, fy, fz) == 0 && blockBelow == 1) {
