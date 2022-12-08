@@ -164,7 +164,7 @@ void fillOblateSpheroid(LevelMap* map, int center_x, int center_y, int center_z,
 
 
 void create_caves(LevelMap* map) {
-    int num_caves = (map->length * map->height * map->width) / 4096;
+    int num_caves = (map->length * map->height * map->width) / 8192;
     for(int i = 0; i < num_caves; i++) {
         int cave_x = rand() % map->length;
         int cave_y = rand() % map->height;
