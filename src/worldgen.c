@@ -393,21 +393,17 @@ void create_shrooms(LevelMap* map, int16_t* heightmap) {
         }
     }
 }
-
+#include <stdio.h>
 bool isSpaceForTree(LevelMap* map, int x, int y, int z, int treeHeight) {
     // Check if the block below is grass
-    if (BoundCheckMap(map, x, y -1 , z) && GetBlockFromMap(map, x, y - 1, z) != 2) {
+    if (!BoundCheckMap(map, x, y - 1, z) || GetBlockFromMap(map, x, y - 1, z) != 2) {
         return false;
     }
 
     // Check if the trunk region is empty
-    for (int i = x - 2; i <= x + 2; i++) {
-        for (int j = y; j < y + treeHeight; j++) {
-            for (int k = z - 2; k <= z + 2; k++) {
-                if (BoundCheckMap(map, i, j, k) && GetBlockFromMap(map, i, j, k) != 0) {
-                    return false;
-                }
-            }
+    for (int j = y + 1; j < y + treeHeight; j++) {
+        if (!BoundCheckMap(map, x, j, z) || GetBlockFromMap(map, x, j, z) != 0) {
+            return false;
         }
     }
 
@@ -415,7 +411,7 @@ bool isSpaceForTree(LevelMap* map, int x, int y, int z, int treeHeight) {
     for (int i = x - 2; i <= x + 2; i++) {
         for (int j = y + treeHeight; j < y + treeHeight + 3; j++) {
             for (int k = z - 2; k <= z + 2; k++) {
-                if (BoundCheckMap(map, i, j, k) && GetBlockFromMap(map, i, j, k) != 0) {
+                if (!BoundCheckMap(map, i, j, k) || GetBlockFromMap(map, i, j, k) != 0) {
                     return false;
                 }
             }
@@ -505,13 +501,13 @@ void growTree(LevelMap* map, int x, int y, int z, int treeHeight) {
 
 
 void create_trees(LevelMap* map, int16_t* heightmap) {
-    int numPatches = map->width * map->length / 1000;
+    int numPatches = (map->width * map->length) / 4000;
 
     for (int i = 0; i < numPatches; i++) {
         uint16_t x = rand() % map->length;
         uint16_t z = rand() % map->width;
 
-        for (int j = 0; j < 20; j++) {
+        for (int j = 0; j < 10; j++) {
             uint16_t fx = x;
             uint16_t fz = z;
 
@@ -519,8 +515,8 @@ void create_trees(LevelMap* map, int16_t* heightmap) {
                 fx += (rand() % 6) - (rand() % 6);
                 fz += (rand() % 6) - (rand() % 6);
 
-                if (BoundCheckMap(map, fx, 0, fz) && (rand() / (float)RAND_MAX) <= 0.25f) {
-                    uint16_t fy = heightmap[fx + fz * map->length] + 1;
+                if (BoundCheckMap(map, fx, 1, fz)) {
+                    uint16_t fy = heightmap[fx + fz * map->length] + 2;
                     uint16_t th = rand() % 3 + 4;
 
                     if(isSpaceForTree(map, fx, fy, fz, th)) {
