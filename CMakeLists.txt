@@ -6,6 +6,8 @@ set(CMAKE_C_STANDARD 11)
 file(GLOB_RECURSE SRC_FILES src/*.c)
 file(GLOB_RECURSE INC_FILES include/*.h)
 
+add_compile_options(-Wno-deprecated-non-prototype)
+
 if(NOT VITA)
     set(ZLIB_SRCS ext/zlib/adler32.c ext/zlib/compress.c ext/zlib/crc32.c ext/zlib/deflate.c ext/zlib/gzclose.c ext/zlib/gzlib.c ext/zlib/gzread.c ext/zlib/gzwrite.c ext/zlib/inflate.c ext/zlib/infback.c ext/zlib/inftrees.c ext/zlib/inffast.c ext/zlib/trees.c ext/zlib/uncompr.c ext/zlib/zutil.c)
 endif()

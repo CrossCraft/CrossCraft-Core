@@ -9,6 +9,8 @@ extern "C" {
 void CrossCraft_Core_Init();
 void CrossCraft_Core_Deinit();
 
+void CrossCraft_Core_Tick();
+
 #ifdef __cplusplus
 };
 #endif

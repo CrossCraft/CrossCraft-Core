@@ -11,6 +11,10 @@ typedef struct{
 } MCVector3;
 
 typedef struct{
+    uint32_t x, y, z;
+} MCIVector3;
+
+typedef struct{
     float x, y;
 } MCVector2;
 
