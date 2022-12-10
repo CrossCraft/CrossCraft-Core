@@ -21,7 +21,7 @@ void CrossCraft_WorldGenerator_Init(int32_t seed) {
 // AMPLIFIED: amp = 2
 float octave_noise(uint8_t octaves, float x, float y, uint16_t seed_modifier) {
     float sum = 0;
-    float amp = 1.15f;
+    float amp = 1.5f;
     float freq = 1;
 
     for (uint8_t i = 0; i < octaves; i++) {
