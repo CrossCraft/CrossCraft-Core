@@ -3,7 +3,7 @@ project(CrossCraft-Core)
 
 set(CMAKE_C_STANDARD 11)
 
-file(GLOB_RECURSE SRC_FILES src/*.c)
+file(GLOB_RECURSE SRC_FILES src/*.c src/*.cpp)
 file(GLOB_RECURSE INC_FILES include/*.h)
 
 add_compile_options(-Wno-deprecated-non-prototype)

@@ -43,6 +43,8 @@ bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix);
  */
 void CrossCraft_World_GenerateMap();
 
+void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z, uint16_t light, uint32_t* updateIDs);
+void CrossCraft_World_RemoveLight(uint16_t x, uint16_t y, uint16_t z, uint16_t light, uint32_t* updateIDs);
 
 #ifdef __cplusplus
 };
