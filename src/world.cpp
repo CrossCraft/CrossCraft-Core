@@ -32,7 +32,6 @@ auto checkAddID(uint32_t* updateIDs, uint32_t id) -> void {
     // Find a slot to insert.
     for(int i = 0; i < 10; i++) {
         if(updateIDs[i] == 0xFFFFFFFF) {
-            printf("%d %d\n", id >> 16, id & 0xFFFF);
             updateIDs[i] = id;
             return;
         }

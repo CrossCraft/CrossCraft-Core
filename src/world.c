@@ -195,8 +195,24 @@ bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
  * @brief Generates the world
  * @TODO Offer a callback for world percentage
  */
-void CrossCraft_World_GenerateMap() {
-    CrossCraft_WorldGenerator_Generate(&level.map);
+void CrossCraft_World_GenerateMap(WorldType worldType) {
+    switch(worldType) {
+        case WORLD_TYPE_ORIGINAL:
+            CrossCraft_WorldGenerator_Generate_Original(&level.map);
+            break;
+        case WORLD_TYPE_FLAT:
+            CrossCraft_WorldGenerator_Generate_Flat(&level.map);
+            break;
+        case WORLD_TYPE_ISLAND:
+            CrossCraft_WorldGenerator_Generate_Island(&level.map);
+            break;
+        case WORLD_TYPE_WOODS:
+            CrossCraft_WorldGenerator_Generate_Woods(&level.map);
+            break;
+        case WORLD_TYPE_FLOATING:
+            CrossCraft_WorldGenerator_Generate_Floating(&level.map);
+            break;
+    }
 }
 
 /**

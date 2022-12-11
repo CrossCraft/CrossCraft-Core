@@ -5,6 +5,7 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stdlib.h>
+#include <time.h>
 
 static fnl_state state;
 static int32_t worldgen_seed;
@@ -17,6 +18,10 @@ void CrossCraft_WorldGenerator_Init(int32_t seed) {
     worldgen_seed = seed;
 }
 
+float noise3d(float x, float y, float z) {
+    float freq = 0.05f;
+    return fnlGetNoise3D(&state, x * freq, y * freq, z * freq);
+}
 
 // AMPLIFIED: amp = 2
 float octave_noise(uint8_t octaves, float x, float y, uint16_t seed_modifier) {
@@ -115,6 +120,25 @@ void smooth_heightmap(int16_t* heightmap, uint16_t length, uint16_t width) {
     }
 }
 
+void smooth_distance(int16_t* heightmap, uint16_t length, uint16_t width) {
+    int midl = length / 2;
+    int midw = width / 2;
+
+    float maxDist = sqrtf(length * length + width * width) / 2;
+
+    for(int x = 0; x < length; x++){
+        for(int z = 0; z < width; z++) {
+
+            int diffX = midl - x;
+            int diffZ = midw - z;
+
+            float dist = sqrtf(diffX * diffX + diffZ * diffZ) / maxDist;
+
+            heightmap[x + z * length] = ((1-dist) + 0.2f) * (float)heightmap[x + z * length];
+        }
+    }
+}
+
 void create_strata(LevelMap* map, const int16_t* heightmap) {
     for(uint16_t x = 0; x < map->length; x++){
         for(uint16_t z = 0; z < map->width; z++){
@@ -134,6 +158,37 @@ void create_strata(LevelMap* map, const int16_t* heightmap) {
                 } else if (y <= dirt_transition) {
                     block_type = 3;
                 }
+
+                SetBlockInMap(map, x, y, z, block_type);
+            }
+        }
+    }
+}
+
+
+void create_strata2(LevelMap* map, const int16_t* heightmap, const int16_t* heightmap2) {
+    for(uint16_t x = 0; x < map->length; x++){
+        for(uint16_t z = 0; z < map->width; z++){
+            float dirt_thickness = octave_noise(8, x, z, 0) / 24.0f - 4.0f;
+            int dirt_transition = heightmap[x + z * map->length];
+            if(dirt_transition >= 63 || dirt_transition <= 0)
+                continue;
+
+            int stone_transition = dirt_transition + dirt_thickness;
+
+            int start = heightmap2[x + z * map->length];
+
+            for (int y = dirt_transition; y >= start; y--) {
+                int block_type = 0;
+
+                if (y <= stone_transition) {
+                    block_type = 1;
+                } else if (y <= dirt_transition) {
+                    block_type = 3;
+                }
+
+                if(GetBlockFromMap(map, x, y, z) == 0)
+                    break;
 
                 SetBlockInMap(map, x, y, z, block_type);
             }
@@ -307,6 +362,9 @@ void create_surface(LevelMap* map, int16_t* heightmap) {
             bool gravelChance = (noise2(x, z) > 12);
 
             int y = heightmap[x + z * map->length];
+            if(y >= 63 || y <= 0)
+                continue;
+
             uint8_t blockAbove = GetBlockFromMap(map, x, y + 1, z);
 
             if (blockAbove == 8 && gravelChance) {
@@ -317,9 +375,12 @@ void create_surface(LevelMap* map, int16_t* heightmap) {
                 if (y <= waterLevel && sandChance) {
                     SetBlockInMap(map, x, y, z, 12);
                 } else {
-                    while(GetBlockFromMap(map, x, y, z) == 0) {
+                    while(BoundCheckMap(map, x, y, z) && GetBlockFromMap(map, x, y, z) == 0) {
                         y--;
                     }
+
+                    if(y <= 0 || y > map->height)
+                        continue;
 
                     uint8_t blkBelow = GetBlockFromMap(map, x, y, z);
                     if(blkBelow != 1 && blkBelow != 8) {
@@ -333,7 +394,7 @@ void create_surface(LevelMap* map, int16_t* heightmap) {
 
 }
 
-void create_flowers(LevelMap* map, int16_t* heightmap) {
+void create_flowers(LevelMap* map, int16_t* heightmap, int off) {
     int numPatches = map->width * map->length / 3000;
 
     for (int i = 0; i < numPatches; i++) {
@@ -350,7 +411,10 @@ void create_flowers(LevelMap* map, int16_t* heightmap) {
                 fz += (rand() % 6) - (rand() % 6);
 
                 if (BoundCheckMap(map, fx, 0, fz)) {
-                    uint16_t fy = heightmap[fx + fz * map->length] + 1;
+                    uint16_t fy = heightmap[fx + fz * map->length] + 1 + off;
+
+                    if(!BoundCheckMap(map, fx, fy, fz))
+                        continue;
 
                     uint8_t blockBelow = GetBlockFromMap(map, fx, fy - 1, fz);
 
@@ -492,15 +556,15 @@ void growTree(LevelMap* map, int x, int y, int z, int treeHeight) {
                 SetBlockInMap(map, x+2, m, z+2, 18);
 
             SetBlockInMap(map, x, m, z, 17);
-            } else {
-                SetBlockInMap(map, x, m, z, 17);
-            }
+        } else {
+            SetBlockInMap(map, x, m, z, 17);
+        }
     }
 
 }
 
 
-void create_trees(LevelMap* map, int16_t* heightmap) {
+void create_trees(LevelMap* map, int16_t* heightmap, int off) {
     int numPatches = (map->width * map->length) / 4000;
 
     for (int i = 0; i < numPatches; i++) {
@@ -516,7 +580,7 @@ void create_trees(LevelMap* map, int16_t* heightmap) {
                 fz += (rand() % 6) - (rand() % 6);
 
                 if (BoundCheckMap(map, fx, 1, fz)) {
-                    uint16_t fy = heightmap[fx + fz * map->length] + 2;
+                    uint16_t fy = heightmap[fx + fz * map->length] + 1 + off;
                     uint16_t th = rand() % 3 + 4;
 
                     if(isSpaceForTree(map, fx, fy, fz, th)) {
@@ -529,10 +593,10 @@ void create_trees(LevelMap* map, int16_t* heightmap) {
     }
 }
 
-void create_plants(LevelMap* map, int16_t* heightmap) {
-    create_flowers(map, heightmap);
+void create_plants(LevelMap* map, int16_t* heightmap, int off) {
+    create_flowers(map, heightmap, off);
     create_shrooms(map, heightmap);
-    create_trees(map, heightmap);
+    create_trees(map, heightmap, off);
 }
 
 /**
@@ -540,7 +604,7 @@ void create_plants(LevelMap* map, int16_t* heightmap) {
  * https://github.com/UnknownShadow200/ClassiCube/wiki/Minecraft-Classic-map-generation-algorithm
  * @param map
  */
-void CrossCraft_WorldGenerator_Generate(LevelMap* map) {
+void CrossCraft_WorldGenerator_Generate_Original(LevelMap* map) {
     int16_t* heightMap = calloc(sizeof(int16_t), map->length * map->width);
 
     // Generate a heightmap
@@ -574,7 +638,182 @@ void CrossCraft_WorldGenerator_Generate(LevelMap* map) {
 
     // Planting Flora
     CC_Internal_Log_Message(CC_LOG_INFO, "Planting...");
-    create_plants(map, heightMap);
+    create_plants(map, heightMap, 1);
 
+    free(heightMap);
+}
+
+void CrossCraft_WorldGenerator_Generate_Island(LevelMap* map) {
+    int16_t* heightMap = calloc(sizeof(int16_t), map->length * map->width);
+
+    // Generate a heightmap
+    CC_Internal_Log_Message(CC_LOG_INFO, "Raising...");
+    create_heightmap(heightMap, map->length, map->width);
+
+    // Smooth heightmap
+    CC_Internal_Log_Message(CC_LOG_INFO, "Eroding...");
+    smooth_heightmap(heightMap, map->length, map->width);
+
+    // Smooth to make an island
+    smooth_distance(heightMap, map->length, map->width);
+
+    // Create Strata
+    CC_Internal_Log_Message(CC_LOG_INFO, "Soiling...");
+    create_strata(map, heightMap);
+
+    // Create Caves
+    CC_Internal_Log_Message(CC_LOG_INFO, "Carving...");
+    create_caves(map);
+    create_ores(map);
+
+    // Watering
+    CC_Internal_Log_Message(CC_LOG_INFO, "Watering...");
+    flood_fill_water(map);
+
+    // Melting
+    CC_Internal_Log_Message(CC_LOG_INFO, "Melting...");
+    flood_fill_lava(map);
+
+    // Growing Surface Layer
+    CC_Internal_Log_Message(CC_LOG_INFO, "Growing...");
+    create_surface(map, heightMap);
+
+    // Planting Flora
+    CC_Internal_Log_Message(CC_LOG_INFO, "Planting...");
+    create_plants(map, heightMap, 1);
+
+    free(heightMap);
+}
+
+void CrossCraft_WorldGenerator_Generate_Floating(LevelMap* map) {
+    float* densityMap = calloc(sizeof(float), map->length * map->width * map->height);
+    int16_t* heightMap = calloc(sizeof(int16_t), map->length * map->width);
+    int16_t* heightMap2 = calloc(sizeof(int16_t), map->length * map->width);
+
+    for(int y = 0; y < map->height; y++) {
+        for (int z = 0; z < map->width; z++) {
+            for (int x = 0; x < map->length; x++) {
+                uint32_t index = (y * map->length * map->width) + (z * map->width) + x;
+
+                densityMap[index] = (noise3d(x, y, z) + 1.0f) / 2.0f;
+
+                if(densityMap[index] > 0.67f) {
+                    SetBlockInMap(map, x, y, z, 1);
+                }
+            }
+        }
+    }
+
+
+    for (int z = 0; z < map->width; z++) {
+        for (int x = 0; x < map->length; x++) {
+            for(int y = map->height - 1; y >= 0; y--) {
+                uint8_t blk = GetBlockFromMap(map, x, y, z);
+
+                if(blk != 0){
+                    heightMap[x + z * map->length] = y;
+                    break;
+                }
+            }
+        }
+    }
+
+    for (int z = 0; z < map->width; z++) {
+        for (int x = 0; x < map->length; x++) {
+            for(int y = 0; y < map->height; y++) {
+                uint8_t blk = GetBlockFromMap(map, x, y, z);
+
+                if(blk != 0){
+                    heightMap2[x + z * map->length] = y;
+                    break;
+                }
+            }
+        }
+    }
+    create_strata2(map, heightMap, heightMap2);
+    create_surface(map, heightMap);
+
+    create_ores(map);
+
+    create_plants(map, heightMap, 1);
+
+
+    SetBlockInMap(map, map->spawnX, map->spawnY, map->spawnZ, 7);
+
+    free(heightMap);
+    free(heightMap2);
+    free(densityMap);
+}
+
+void CrossCraft_WorldGenerator_Generate_Woods(LevelMap* map) {
+    int16_t* heightMap = calloc(sizeof(int16_t), map->length * map->width);
+
+    // Generate a heightmap
+    CC_Internal_Log_Message(CC_LOG_INFO, "Raising...");
+    create_heightmap(heightMap, map->length, map->width);
+
+    // Smooth heightmap
+    CC_Internal_Log_Message(CC_LOG_INFO, "Eroding...");
+    smooth_heightmap(heightMap, map->length, map->width);
+
+    // Create Strata
+    CC_Internal_Log_Message(CC_LOG_INFO, "Soiling...");
+    create_strata(map, heightMap);
+
+    // Create Caves
+    CC_Internal_Log_Message(CC_LOG_INFO, "Carving...");
+    create_caves(map);
+    create_ores(map);
+
+    // Watering
+    CC_Internal_Log_Message(CC_LOG_INFO, "Watering...");
+    flood_fill_water(map);
+
+    // Melting
+    CC_Internal_Log_Message(CC_LOG_INFO, "Melting...");
+    flood_fill_lava(map);
+
+    // Growing Surface Layer
+    CC_Internal_Log_Message(CC_LOG_INFO, "Growing...");
+    create_surface(map, heightMap);
+
+    // Planting Flora
+    CC_Internal_Log_Message(CC_LOG_INFO, "Planting...");
+    create_plants(map, heightMap, 1);
+    srand(time(0) + 1);
+    create_plants(map, heightMap, 1);
+
+    free(heightMap);
+}
+
+
+void CrossCraft_WorldGenerator_Generate_Flat(LevelMap* map) {
+    for(uint16_t x = 0; x < map->length; x++){
+        for(uint16_t z = 0; z < map->width; z++){
+            for (int y = 0; y < 64; y++) {
+                int block_type = 0;
+
+                if(y == 0 ){
+                    block_type = 7;
+                } else if (y == 1) {
+                    block_type = rand() % 2 == 0 ? 7 : 1;
+                } else if (y <= 28) {
+                    block_type = 1;
+                } else if (y <= 31) {
+                    block_type = 3;
+                } else if (y <= 32) {
+                    block_type = 2;
+                }
+
+                SetBlockInMap(map, x, y, z, block_type);
+            }
+        }
+    }
+
+    int16_t* heightMap = calloc(sizeof(int16_t), map->length * map->width);
+    for(int i = 0; i < map->length * map->width; i++) {
+        heightMap[i] = 32;
+    }
+    create_plants(map, heightMap, 0);
     free(heightMap);
 }
