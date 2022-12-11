@@ -128,7 +128,7 @@ void create_strata(LevelMap* map, const int16_t* heightmap) {
                 if(y == 0 ){
                     block_type = 7;
                 } else if (y == 1) {
-                    block_type = 11;
+                    block_type = rand() % 2 == 0 ? 7 : 1;
                 } else if (y <= stone_transition) {
                     block_type = 1;
                 } else if (y <= dirt_transition) {

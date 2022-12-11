@@ -107,6 +107,10 @@ void CrossCraft_World_Create_Map(uint8_t size) {
         }
     }
 
+    level.map.spawnX = level.map.length / 2;
+    level.map.spawnY = level.map.height / 2;
+    level.map.spawnZ = level.map.width / 2;
+
     uint32_t blockCount = level.map.length * level.map.height * level.map.width;
     level.map.blocks = calloc(sizeof(uint8_t), blockCount);
     level.map.data = calloc(sizeof(uint8_t), blockCount);
