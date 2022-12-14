@@ -226,7 +226,7 @@ void create_map(struct nbt_list* list) {
 
     struct nbt_list* Spawn = malloc(sizeof(struct nbt_list));
     Spawn->data = malloc(sizeof(nbt_node));
-    Spawn->data->name = "Spawn";
+    Spawn->data->name = strdup("Spawn");
     Spawn->data->type = TAG_LIST;
     Spawn->data->payload.tag_list = malloc(sizeof(struct nbt_list));
     Spawn->data->payload.tag_list->data = malloc(sizeof(struct nbt_node));
@@ -290,7 +290,7 @@ void CrossCraft_World_Save(uint8_t slot, const char* prefix) {
 
     struct nbt_list* about_list = malloc(sizeof(struct nbt_list));
     about_list->data = malloc(sizeof(nbt_node));
-    about_list->data->name = "About";
+    about_list->data->name = strdup("About");
     about_list->data->type = TAG_COMPOUND;
     about_list->data->payload.tag_compound = malloc(sizeof(struct nbt_list));
     about_list->data->payload.tag_compound->data = NULL;
@@ -302,7 +302,7 @@ void CrossCraft_World_Save(uint8_t slot, const char* prefix) {
 
     struct nbt_list* map_list = malloc(sizeof(struct nbt_list));
     map_list->data = malloc(sizeof(nbt_node));
-    map_list->data->name = "Map";
+    map_list->data->name = strdup("Map");
     map_list->data->type = TAG_COMPOUND;
     map_list->data->payload.tag_compound = malloc(sizeof(struct nbt_list));
     map_list->data->payload.tag_compound->data = NULL;
@@ -319,7 +319,7 @@ void CrossCraft_World_Save(uint8_t slot, const char* prefix) {
     }
     fclose(fptr);
 
-    //nbt_free(tree);
+    nbt_free(tree);
 }
 
 /**
