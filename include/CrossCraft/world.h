@@ -37,6 +37,13 @@ void CrossCraft_World_Spawn();
  */
 bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix);
 
+/**
+ * @brief Save the world
+ * @param slot World slot
+ * @param prefix Save location prefix
+ */
+void CrossCraft_World_Save(uint8_t slot, const char* prefix);
+
 typedef enum {
     WORLD_TYPE_ORIGINAL = 0,
     WORLD_TYPE_FLAT = 1,

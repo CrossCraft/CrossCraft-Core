@@ -47,8 +47,8 @@ typedef struct {
 
 typedef struct {
     uint64_t createdOn;
-    const char* name;
-    const char* author;
+    char* name;
+    char* author;
 } LevelAbout;
 
 typedef struct {

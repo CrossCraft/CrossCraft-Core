@@ -16,9 +16,9 @@ void CrossCraft_World_Init() {
     CrossCraft_WorldGenerator_Init(rand());
 
     LevelAbout abt = {
-        .createdOn = time(NULL),
-        .name = "A Nice World",
-        .author = "Default"
+            .createdOn = time(NULL),
+            .name = "A Nice World",
+            .author = "Default"
     };
 
     LevelEnvironment env = {
@@ -126,22 +126,11 @@ void CrossCraft_World_Create_Map(uint8_t size) {
 bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
     char buf[256] = {0};
 
-    strcpy(buf, prefix);
-    strcat(buf, "save.ccc");
-
-    FILE* fptr = fopen(buf, "r");
-    if(fptr) {
-        slot = 5;
-        // TODO: Load and convert
-
-        fclose(fptr);
-        return true;
-    }
-
     if(slot >= 5) {
         return false;
     }
     sprintf(buf, "%slevel%d.mclevel", prefix, slot);
+    printf("%s\n", buf);
 
     CC_Internal_Log_Message(CC_LOG_INFO, "Attempting load.");
     CC_Internal_Log_Message(CC_LOG_DEBUG, buf);
@@ -156,8 +145,8 @@ bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
     nbt_node* abt = nbt_find_by_name(root, "About");
 
     if(abt != NULL) {
-        level.about.name = nbt_find_by_name(abt, "Name")->payload.tag_string;
-        level.about.author = nbt_find_by_name(abt, "Author")->payload.tag_string;
+        level.about.name = strdup(nbt_find_by_name(abt, "Name")->payload.tag_string);
+        level.about.author = strdup(nbt_find_by_name(abt, "Author")->payload.tag_string);
         level.about.createdOn = nbt_find_by_name(abt, "CreatedOn")->payload.tag_long;
 
         CC_Internal_Log_Message(CC_LOG_TRACE, level.about.name);
@@ -187,9 +176,150 @@ bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
         memcpy(level.map.data, byteArray.data, blockCount);
     }
 
+
+    char* res = nbt_dump_ascii(root);
+    FILE* dump = fopen("dump.txt", "w");
+    for(size_t i = 0; res[i] != 0; i++) {
+        fprintf(dump, "%c", res[i]);
+    }
+    fclose(dump);
+
     nbt_free(root);
 
     return true;
+}
+
+struct nbt_list* create_generic(const char* string, nbt_type type) {
+    struct nbt_list* new_list = malloc(sizeof(struct nbt_list));
+    new_list->data = malloc(sizeof(nbt_node));
+    new_list->data->name = strdup(string);
+    new_list->data->type = type;
+
+    return new_list;
+}
+
+void create_about(struct nbt_list* list) {
+    struct nbt_list* CreatedOn = create_generic("CreatedOn", TAG_LONG);
+    CreatedOn->data->payload.tag_long = level.about.createdOn;
+
+    struct nbt_list* Name = create_generic("Name", TAG_STRING);
+    Name->data->payload.tag_string = strdup(level.about.name);
+
+    struct nbt_list* Author = create_generic("Author", TAG_STRING);
+    Author->data->payload.tag_string = strdup(level.about.author);
+
+    list_add_tail(&CreatedOn->entry, &list->entry);
+    list_add_tail(&Name->entry, &list->entry);
+    list_add_tail(&Author->entry, &list->entry);
+}
+
+
+void create_map(struct nbt_list* list) {
+    struct nbt_list* Width = create_generic("Width", TAG_LONG);
+    Width->data->payload.tag_short = level.map.width;
+
+    struct nbt_list* Length = create_generic("Length", TAG_LONG);
+    Length->data->payload.tag_short = level.map.length;
+
+    struct nbt_list* Height = create_generic("Height", TAG_LONG);
+    Height->data->payload.tag_short = level.map.height;
+
+    struct nbt_list* Spawn = malloc(sizeof(struct nbt_list));
+    Spawn->data = malloc(sizeof(nbt_node));
+    Spawn->data->name = "Spawn";
+    Spawn->data->type = TAG_LIST;
+    Spawn->data->payload.tag_list = malloc(sizeof(struct nbt_list));
+    Spawn->data->payload.tag_list->data = malloc(sizeof(struct nbt_node));
+    Spawn->data->payload.tag_list->data->name = NULL;
+    Spawn->data->payload.tag_list->data->type = TAG_SHORT;
+    Spawn->data->payload.tag_list->data->payload.tag_short = 3;
+    INIT_LIST_HEAD(&Spawn->data->payload.tag_list->entry);
+
+    {
+        struct nbt_list *X = create_generic(NULL, TAG_LONG);
+        X->data->payload.tag_short = level.map.spawnX;
+
+        struct nbt_list *Y = create_generic(NULL, TAG_LONG);
+        Y->data->payload.tag_short = level.map.spawnY;
+
+        struct nbt_list *Z = create_generic(NULL, TAG_LONG);
+        Z->data->payload.tag_short = level.map.spawnZ;
+
+        list_add_tail(&X->entry, &Spawn->data->payload.tag_list->entry);
+        list_add_tail(&Y->entry, &Spawn->data->payload.tag_list->entry);
+        list_add_tail(&Z->entry, &Spawn->data->payload.tag_list->entry);
+    }
+
+    struct nbt_list* Blocks = create_generic("Blocks", TAG_BYTE_ARRAY);
+    Blocks->data->payload.tag_byte_array.length = level.map.length * level.map.width * level.map.height;
+    Blocks->data->payload.tag_byte_array.data = malloc(Blocks->data->payload.tag_byte_array.length);
+
+    memcpy(Blocks->data->payload.tag_byte_array.data, level.map.blocks, level.map.length * level.map.width * level.map.height);
+
+    struct nbt_list* Data = create_generic("Data", TAG_BYTE_ARRAY);
+    Data->data->payload.tag_byte_array.length = level.map.length * level.map.width * level.map.height;
+    Data->data->payload.tag_byte_array.data = malloc(Data->data->payload.tag_byte_array.length);
+
+    memcpy(Data->data->payload.tag_byte_array.data, level.map.data, level.map.length * level.map.width * level.map.height);
+
+    list_add_tail(&Width->entry, &list->entry);
+    list_add_tail(&Length->entry, &list->entry);
+    list_add_tail(&Height->entry, &list->entry);
+    list_add_tail(&Spawn->entry, &list->entry);
+    list_add_tail(&Blocks->entry, &list->entry);
+    list_add_tail(&Data->entry, &list->entry);
+}
+
+/**
+ * @brief Save the world
+ * @param slot World slot
+ */
+void CrossCraft_World_Save(uint8_t slot, const char* prefix) {
+    char buf[256] = {0};
+
+    sprintf(buf, "%slevel%d.mclevel", prefix, slot);
+    printf("%s\n", buf);
+
+    // Create MCLEVEL Root
+    nbt_node* tree = malloc(sizeof(nbt_node));
+    tree->name = strdup("MinecraftLevel");
+    tree->type = TAG_COMPOUND;
+    tree->payload.tag_compound = malloc(sizeof(struct nbt_list));
+    tree->payload.tag_compound->data = NULL;
+    INIT_LIST_HEAD(&tree->payload.tag_compound->entry);
+
+    struct nbt_list* about_list = malloc(sizeof(struct nbt_list));
+    about_list->data = malloc(sizeof(nbt_node));
+    about_list->data->name = "About";
+    about_list->data->type = TAG_COMPOUND;
+    about_list->data->payload.tag_compound = malloc(sizeof(struct nbt_list));
+    about_list->data->payload.tag_compound->data = NULL;
+    INIT_LIST_HEAD(&about_list->data->payload.tag_compound->entry);
+
+    create_about(about_list->data->payload.tag_compound);
+    list_add_tail(&about_list->entry, &tree->payload.tag_compound->entry);
+
+
+    struct nbt_list* map_list = malloc(sizeof(struct nbt_list));
+    map_list->data = malloc(sizeof(nbt_node));
+    map_list->data->name = "Map";
+    map_list->data->type = TAG_COMPOUND;
+    map_list->data->payload.tag_compound = malloc(sizeof(struct nbt_list));
+    map_list->data->payload.tag_compound->data = NULL;
+    INIT_LIST_HEAD(&map_list->data->payload.tag_compound->entry);
+
+    create_map(map_list->data->payload.tag_compound);
+    list_add_tail(&map_list->entry, &tree->payload.tag_compound->entry);
+
+    FILE* fptr = fopen(buf, "wb");
+    if(nbt_dump_file(tree, fptr, STRAT_GZIP) != NBT_OK) {
+        CC_Internal_Log_Message(CC_LOG_ERROR, "COULD NOT SAVE!");
+    } else {
+        CC_Internal_Log_Message(CC_LOG_INFO, "SAVED WORLD!");
+    }
+    fclose(fptr);
+
+    //nbt_free(tree);
 }
 
 /**
@@ -235,7 +365,7 @@ void CrossCraft_World_Spawn() {
 
                 CC_Internal_Log_Message(CC_LOG_INFO, "Spawned!");
 
-                //TODO: Set Player Pos
+                //TODO: Set Player Pos Through Communications System
 
                 CrossCraft_Indev_House(x, y, z);
 
