@@ -1,6 +1,7 @@
 #include <CrossCraft/log.h>
 #include <CrossCraft/world.h>
 #include <CrossCraft/worldgen.h>
+#include <CrossCraft/indev.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
@@ -219,7 +220,29 @@ void CrossCraft_World_GenerateMap(WorldType worldType) {
  * @brief Spawn the player into the world
  */
 void CrossCraft_World_Spawn() {
+    CC_Internal_Log_Message(CC_LOG_INFO, "Attempting spawn...");
+    for(int i = 0; i < 30; i++) {
+        int x = ((rand() % (level.map.length / 2)) - (level.map.length / 4)) + level.map.spawnX;
+        int z = ((rand() % (level.map.width / 2)) - (level.map.width / 4)) + level.map.spawnZ;
 
+        for(int y = level.map.height - 1; y >= 31; y--) {
+            uint8_t blk = GetBlockFromMap(CrossCraft_World_GetMapPtr(), x, y, z);
+
+            if(blk != 0 && !(blk == 8 || blk == 9)) {
+                level.map.spawnX = x - 1;
+                level.map.spawnY = y + 3;
+                level.map.spawnZ = z - 1;
+
+                CC_Internal_Log_Message(CC_LOG_INFO, "Spawned!");
+
+                //TODO: Set Player Pos
+
+                CrossCraft_Indev_House(x, y, z);
+
+                return;
+            }
+        }
+    }
 }
 
 LevelMap* CrossCraft_World_GetMapPtr() {
