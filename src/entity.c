@@ -1,6 +1,7 @@
 #include <CrossCraft/entity.h>
 #include <CrossCraft/log.h>
 #include <CrossCraft/world.h>
+#include <CrossCraft/event.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -20,10 +21,6 @@ void CrossCraft_EntityMan_Deinit() {
             free(entityList[i]);
         }
     }
-}
-
-Entity** CrossCraft_EntityMan_GetEntityList() {
-    return entityList;
 }
 
 bool test(MCIVector3 pos) {
@@ -145,35 +142,35 @@ void EntityUpdate(Entity* e) {
     e->base.vel.z *= 0.99f;
 }
 
-void ArrowUpdate(Arrow* e) {
-    e->lifeTime -= 1;
+void ArrowUpdate(Entity* e) {
+    Arrow* a = (Arrow*)e->next;
+    a->lifeTime -= 1;
 
-    e->base.acc.y = -1.0f;
-
+    e->base.acc.y = -1;
     MCVector3 vel = e->base.vel;
 
-    if(!e->hit) {
+    if(!a->hit) {
         e->base.update(e);
     }
 
     if(e->base.vel.x == 0 || e->base.vel.z == 0) {
-        e->hit = true;
+        a->hit = true;
         e->base.vel = vel;
     }
 }
 
-void DropUpdate(Drop* e) {
-    e->lifeTime -= 1;
-    e->base.acc.y = -32;
+void DropUpdate(Entity* e) {
+    ((Drop*)e->next)->lifeTime -= 1;
+    e->base.acc.y = -1;
     e->base.update(e);
 }
 
-void TNTUpdate(TNT* e) {
-    e->lifeTime -= 1;
-    e->base.acc.y = -32;
+void TNTUpdate(Entity* e) {
+    ((TNT*)e->next)->lifeTime -= 1;
+    e->base.acc.y = -1;
     e->base.update(e);
 
-    if(e->lifeTime == 0) {
+    if(((TNT*)e->next)->lifeTime == 0) {
         //TODO: EXPLODE!
     }
 }
@@ -187,9 +184,14 @@ void CrossCraft_EntityMan_Tick() {
             continue;
 
         Entity* e = entityList[i];
+
+        struct EventEntity* ee = malloc(sizeof(struct EventEntity));
+        ee->type = CROSSCRAFT_EVENT_TYPE_UPDATE_ENTITY;
+        ee->e = e;
+
         if(e->eType == ENTITY_TYPE_ARROW) {
-            Arrow* a = (Arrow*)e;
-            a->update(a);
+            Arrow* a = (Arrow*)(e->next);
+            a->update(e);
 
             if(a->lifeTime == 0 && deleteCount < 32) {
                 deleteArray[deleteCount] = e;
@@ -209,6 +211,8 @@ void CrossCraft_EntityMan_Tick() {
                 deleteArray[deleteCount] = e;
             }
         }
+
+        CrossCraft_Event_Push(CROSSCRAFT_EVENT_TYPE_UPDATE_ENTITY, (struct Event*)ee);
     }
 
     for(uint8_t i = 0; i < deleteCount; i++) {
@@ -244,49 +248,68 @@ EntityBase create_entity_base(MCVector3 position, MCVector3 velocity) {
     return ebase;
 }
 
-Arrow* CrossCraft_Entity_CreateArrow(MCVector3 position, MCVector3 velocity, bool playerFired) {
-    Arrow* a = malloc(sizeof(Arrow));
-    a->eType = ENTITY_TYPE_ARROW;
-    a->base = create_entity_base(position, velocity);
-    a->base.size.x = 0.1f;
-    a->base.size.y = 0.1f;
-    a->base.size.z = 0.1f;
+Entity* CrossCraft_Entity_CreateArrow(MCVector3 position, MCVector3 velocity, bool playerFired) {
+    Entity* e = malloc(sizeof(Entity));
+    e->eType = ENTITY_TYPE_ARROW;
+    e->base = create_entity_base(position, velocity);
+    e->base.size.x = 0.1f;
+    e->base.size.y = 0.1f;
+    e->base.size.z = 0.1f;
+    e->next = malloc(sizeof(Arrow));
+
+    Arrow* a = (Arrow*)e->next;
     a->lifeTime = 1200;
     a->playerFired = playerFired;
     a->update = ArrowUpdate;
     a->hit = false;
 
-    return a;
+    return e;
 }
 
-Drop* CrossCraft_Entity_CreateDrop(MCVector3 position, MCVector3 velocity, SlotData* data) {
-    Drop* a = malloc(sizeof(Drop));
-    a->eType = ENTITY_TYPE_DROP;
-    a->base = create_entity_base(position, velocity);
-    a->lifeTime = 1200;
+Entity* CrossCraft_Entity_CreateDrop(MCVector3 position, MCVector3 velocity, SlotData* data) {
+    Entity* e = malloc(sizeof(Entity));
+    e->eType = ENTITY_TYPE_ARROW;
+    e->base = create_entity_base(position, velocity);
+    e->base.size.x = 0.1f;
+    e->base.size.y = 0.1f;
+    e->base.size.z = 0.1f;
+    e->next = malloc(sizeof(Drop));
+
+    Drop* a = (Drop*)e->next;
+    a->lifeTime = 6000;
     a->item = *data;
     a->update = DropUpdate;
 
-    return a;
+    return e;
 }
 
-TNT* CrossCraft_Entity_CreateTNT(MCVector3 position, MCVector3 velocity, uint16_t fuse) {
-    TNT* a = malloc(sizeof(TNT));
-    a->eType = ENTITY_TYPE_DROP;
-    a->base = create_entity_base(position, velocity);
+Entity* CrossCraft_Entity_CreateTNT(MCVector3 position, MCVector3 velocity, uint16_t fuse) {
+    Entity* e = malloc(sizeof(Entity));
+    e->eType = ENTITY_TYPE_ARROW;
+    e->base = create_entity_base(position, velocity);
+    e->base.size.x = 0.1f;
+    e->base.size.y = 0.1f;
+    e->base.size.z = 0.1f;
+    e->next = malloc(sizeof(TNT));
+
+    TNT* a = (TNT*)e->next;
     a->lifeTime = fuse;
     a->update = TNTUpdate;
 
-    return a;
+    return e;
 }
 
-int CrossCraft_EntityMan_AddEntity(void* e) {
+void CrossCraft_EntityMan_AddEntity(void* e) {
     CC_Internal_Log_Message(CC_LOG_DEBUG, "Created Entity!");
     do {
         eCounter++;
     } while(entityList[eCounter] != NULL);
 
     entityList[eCounter] = e;
+    entityList[eCounter]->eID = eCounter;
 
-    return eCounter;
+    struct EventEntity* ee = malloc(sizeof(struct EventEntity));
+    ee->type = CROSSCRAFT_EVENT_TYPE_ADD_ENTITY;
+    ee->e = e;
+    CrossCraft_Event_Push(CROSSCRAFT_EVENT_TYPE_ADD_ENTITY, (struct Event*)ee);
 }

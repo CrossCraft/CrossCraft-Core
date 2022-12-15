@@ -32,32 +32,28 @@ typedef struct {
 
 typedef struct {
     EntityType eType;
+    uint16_t eID;
     EntityBase base;
+    void* next;
 } Entity;
 
 // Arrows
 typedef struct {
-    EntityType eType;
-    EntityBase base;
-    bool playerFired;
     uint16_t lifeTime;
+    bool playerFired;
     bool hit;
 
     UpdateHandler update;
 } Arrow;
 
 typedef struct {
-    EntityType eType;
-    EntityBase base;
-    SlotData item;
     uint16_t lifeTime;
+    SlotData item;
 
     UpdateHandler update;
 } Drop;
 
 typedef struct {
-    EntityType eType;
-    EntityBase base;
     uint16_t lifeTime;
 
     UpdateHandler update;
@@ -65,18 +61,17 @@ typedef struct {
 
 void CrossCraft_EntityMan_Init();
 void CrossCraft_EntityMan_Deinit();
-int CrossCraft_EntityMan_AddEntity(void* e);
-Entity** CrossCraft_EntityMan_GetEntityList();
+void CrossCraft_EntityMan_AddEntity(void* e);
 
 void EntityUpdate(Entity* e);
-void ArrowUpdate(Arrow* e);
-void DropUpdate(Drop* e);
-void TNTUpdate(TNT* e);
+void ArrowUpdate(Entity* e);
+void DropUpdate(Entity* e);
+void TNTUpdate(Entity* e);
 void CrossCraft_EntityMan_Tick();
 
-Arrow* CrossCraft_Entity_CreateArrow(MCVector3 position, MCVector3 velocity, bool playerFired);
-Drop* CrossCraft_Entity_CreateDrop(MCVector3 position, MCVector3 velocity, SlotData* data);
-TNT* CrossCraft_Entity_CreateTNT(MCVector3 position, MCVector3 velocity, uint16_t fuse);
+Entity* CrossCraft_Entity_CreateArrow(MCVector3 position, MCVector3 velocity, bool playerFired);
+Entity* CrossCraft_Entity_CreateDrop(MCVector3 position, MCVector3 velocity, SlotData* data);
+Entity* CrossCraft_Entity_CreateTNT(MCVector3 position, MCVector3 velocity, uint16_t fuse);
 
 
 #ifdef __cplusplus

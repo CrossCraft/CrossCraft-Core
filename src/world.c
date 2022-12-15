@@ -213,7 +213,6 @@ void create_about(struct nbt_list* list) {
     list_add_tail(&Author->entry, &list->entry);
 }
 
-
 void create_map(struct nbt_list* list) {
     struct nbt_list* Width = create_generic("Width", TAG_LONG);
     Width->data->payload.tag_short = level.map.width;

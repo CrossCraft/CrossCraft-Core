@@ -17,7 +17,7 @@ set(NBT_SRCS ext/cnbt/buffer.c ext/cnbt/nbt_loading.c ext/cnbt/nbt_parsing.c ext
 add_library(CNBT ${ZLIB_SRCS} ${NBT_SRCS})
 target_include_directories(CNBT PUBLIC ext/zlib)
 
-add_library(CCCore ${SRC_FILES} ${INC_FILES})
+add_library(CCCore ${SRC_FILES} ${INC_FILES} src/event.cpp)
 target_include_directories(CCCore PUBLIC include ext/cnbt/ ext/zlib/)
 
 if(NOT MSVC)
