@@ -21,6 +21,11 @@ struct EventEntity {
     Entity* e;
 };
 
+struct EventEntityRemove {
+    uint32_t type;
+    uint32_t eid;
+};
+
 typedef void (*EventListener)(struct Event*);
 
 void CrossCraft_Event_Subscribe(uint32_t type, EventListener listener);
