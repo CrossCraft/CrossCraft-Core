@@ -65,7 +65,8 @@ auto propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel) -> void 
     if(!BoundCheckMap(map, x, y, z))
         return;
 
-    if(GetBlockFromMap(map, x, y, z) == 0 && GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
+    auto blk = GetBlockFromMap(map, x, y, z);
+    if((blk == 0 || blk == 20 || blk == 18 || (blk >= 8 && blk <= 11) || (blk >= 37 && blk <= 40)) && GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
         SetLightInMap(map, x, y, z, lightLevel - 1);
         sunlightBfsQueue.emplace(x, y, z, 0);
     }
