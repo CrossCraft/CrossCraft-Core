@@ -45,7 +45,7 @@ typedef struct {
     uint16_t hurtTime; // Time the entity is red
     uint16_t deathTime; // Number of ticks of death
 
-    uint16_t air; // Number of ticks before player drowns
+    uint16_t air; // Number of ticks before drowns
     int16_t fire; // Negative = number of ticks before fire; Positive = number of ticks before extinguished
 
     //Last two here are not used for entities other than player

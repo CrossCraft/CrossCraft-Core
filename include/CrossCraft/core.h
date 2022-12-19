@@ -11,6 +11,18 @@ void CrossCraft_Core_Deinit();
 
 void CrossCraft_Core_Tick();
 
+
+typedef enum {
+    DIFFICULTY_PEACEFUL,
+    DIFFICULTY_EASY,
+    DIFFICULTY_NORMAL,
+    DIFFICULTY_HARD,
+} DifficultyLevel;
+
+void CrossCraft_SetDifficulty(DifficultyLevel level);
+
+DifficultyLevel CrossCraft_GetDifficulty();
+
 #ifdef __cplusplus
 };
 #endif

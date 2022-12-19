@@ -122,7 +122,6 @@ void test_collide(EntityBase* e) {
     }
 }
 
-
 void EntityUpdate(Entity* e) {
     e->base.vel.x += e->base.acc.x;
     e->base.vel.y += e->base.acc.y;
@@ -312,6 +311,55 @@ Entity* CrossCraft_Entity_CreateTNT(MCVector3 position, MCVector3 velocity, uint
     TNT* a = (TNT*)e->next;
     a->lifeTime = fuse;
     a->update = TNTUpdate;
+
+    return e;
+}
+
+#include <CrossCraft/mob.h>
+
+uint16_t getHealth(MobType type) {
+    switch(type) {
+        case MOB_TYPE_PIG:
+            return 10;
+        case MOB_TYPE_SHEEP:
+            return 8;
+        case MOB_TYPE_ZOMBIE:
+            return 20;
+        case MOB_TYPE_CREEPER:
+            return 20;
+        case MOB_TYPE_SKELETON:
+            return 20;
+        case MOB_TYPE_SPIDER:
+            return 16;
+    }
+}
+
+Entity* CrossCraft_Entity_CreateMob(MCVector3 position, MCVector3 velocity, int type) {
+    Entity* e = malloc(sizeof(Entity));
+    e->eType = ENTITY_TYPE_TNT;
+    e->base = create_entity_base(position, velocity);
+    e->next = malloc(sizeof(Mob));
+
+    Mob* m = (Mob*)e->next;
+    m->type = type;
+    m->air = 300;
+    m->hurtTime = 0;
+    m->immuneTime = 0;
+    m->deathTime = 0;
+    m->fire = -1;
+    m->update = MobUpdate;
+
+    m->health = getHealth(type);
+
+    if(m->type == MOB_TYPE_SKELETON) {
+        m->next = malloc(sizeof(Skeleton));
+        Skeleton* s = m->next;
+        s->shotTimer = 0;
+    } else if(m->type == MOB_TYPE_SHEEP) {
+        m->next = malloc(sizeof(Sheep));
+        Sheep* s = m->next;
+        s->hasWool = true;
+    }
 
     return e;
 }

@@ -72,7 +72,7 @@ void CrossCraft_EntityMan_Tick();
 Entity* CrossCraft_Entity_CreateArrow(MCVector3 position, MCVector3 velocity, bool playerFired);
 Entity* CrossCraft_Entity_CreateDrop(MCVector3 position, MCVector3 velocity, SlotData* data);
 Entity* CrossCraft_Entity_CreateTNT(MCVector3 position, MCVector3 velocity, uint16_t fuse);
-
+Entity* CrossCraft_Entity_CreateMob(MCVector3 position, MCVector3 velocity, int type);
 
 #ifdef __cplusplus
 };

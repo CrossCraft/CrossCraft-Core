@@ -25,3 +25,15 @@ void CrossCraft_Core_Deinit() {
 void CrossCraft_Core_Tick() {
     CrossCraft_EntityMan_Tick();
 }
+
+static DifficultyLevel CC_DifficultyLevel = DIFFICULTY_NORMAL;
+
+// Sets the difficulty level
+void CrossCraft_SetDifficulty(DifficultyLevel level) {
+    CC_DifficultyLevel = level;
+}
+
+// Gets the difficulty level
+DifficultyLevel CrossCraft_GetDifficulty() {
+    return CC_DifficultyLevel;
+}
