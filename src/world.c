@@ -44,7 +44,8 @@ void CrossCraft_World_Init() {
             .spawnY = 48,
 
             .blocks = NULL,
-            .data = NULL
+            .metaData = NULL,
+            .lightData = NULL
     };
 
 
@@ -73,8 +74,11 @@ void CrossCraft_World_Deinit() {
     if(level.map.blocks)
         free(level.map.blocks);
 
-    if(level.map.data)
-        free(level.map.data);
+    if(level.map.metaData)
+        free(level.map.metaData);
+
+    if(level.map.lightData)
+        free(level.map.lightData);
 
     if(level.entities.entities)
         free(level.entities.entities);
@@ -114,7 +118,8 @@ void CrossCraft_World_Create_Map(uint8_t size) {
 
     uint32_t blockCount = level.map.length * level.map.height * level.map.width;
     level.map.blocks = calloc(sizeof(uint8_t), blockCount);
-    level.map.data = calloc(sizeof(uint8_t), blockCount);
+    level.map.metaData = calloc(sizeof(uint8_t), blockCount);
+    level.map.lightData = calloc(sizeof(uint8_t), blockCount);
 }
 
 #include <nbt.h>
@@ -124,6 +129,7 @@ void CrossCraft_World_Create_Map(uint8_t size) {
  * @returns If the world was loaded
  */
 bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
+    //TODO: FIX LOADING
     char buf[256] = {0};
 
     if(slot >= 5) {
@@ -168,12 +174,13 @@ bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix) {
 
         uint32_t blockCount = level.map.length * level.map.height * level.map.width;
         level.map.blocks = malloc(blockCount);
-        level.map.data = malloc(blockCount);
+        level.map.metaData = malloc(blockCount);
+        level.map.lightData = calloc(sizeof(uint8_t), blockCount);
 
         struct nbt_byte_array byteArray = nbt_find_by_name(map, "Blocks")->payload.tag_byte_array;
         memcpy(level.map.blocks, byteArray.data, blockCount);
         byteArray = nbt_find_by_name(map, "Data")->payload.tag_byte_array;
-        memcpy(level.map.data, byteArray.data, blockCount);
+        memcpy(level.map.metaData, byteArray.data, blockCount);
     }
 
 
@@ -259,7 +266,7 @@ void create_map(struct nbt_list* list) {
     Data->data->payload.tag_byte_array.length = level.map.length * level.map.width * level.map.height;
     Data->data->payload.tag_byte_array.data = malloc(Data->data->payload.tag_byte_array.length);
 
-    memcpy(Data->data->payload.tag_byte_array.data, level.map.data, level.map.length * level.map.width * level.map.height);
+    memcpy(Data->data->payload.tag_byte_array.data, level.map.metaData, level.map.length * level.map.width * level.map.height);
 
     list_add_tail(&Width->entry, &list->entry);
     list_add_tail(&Length->entry, &list->entry);
@@ -274,6 +281,7 @@ void create_map(struct nbt_list* list) {
  * @param slot World slot
  */
 void CrossCraft_World_Save(uint8_t slot, const char* prefix) {
+    //TODO: FIX SAVING
     char buf[256] = {0};
 
     sprintf(buf, "%slevel%d.mclevel", prefix, slot);

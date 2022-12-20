@@ -53,9 +53,12 @@ auto propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel, uint32_t
 
     if((blk == 0 || blk == 20 || blk == 18 || (blk >= 8 && blk <= 11) || (blk >= 37 && blk <= 40)) && GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
         if(blk == 18 || (blk >= 8 && blk <= 11) || (blk >= 37 && blk <= 40)) {
-            lightLevel -= 2;
+            if(lightLevel >= 3)
+                lightLevel -= 2;
+            else
+                lightLevel = 1;
         }
-        SetLightInMap(map, x, y, z, lightLevel - 1);
+        SetBlockLightInMap(map, x, y, z, lightLevel - 1);
         lightBfsQueue.emplace(x, y, z, 0);
     }
 }
@@ -66,8 +69,8 @@ auto propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel) -> void 
         return;
 
     auto blk = GetBlockFromMap(map, x, y, z);
-    if((blk == 0 || blk == 20 || blk == 18 || (blk >= 8 && blk <= 11) || (blk >= 37 && blk <= 40)) && GetLightFromMap(map, x, y, z) + 2 <= lightLevel) {
-        SetLightInMap(map, x, y, z, lightLevel - 1);
+    if((blk == 0 || blk == 20 || blk == 18 || (blk >= 8 && blk <= 11) || (blk >= 37 && blk <= 40)) && GetSunLightFromMap(map, x, y, z) + 2 <= lightLevel) {
+        SetSunLightInMap(map, x, y, z, lightLevel - 1);
         sunlightBfsQueue.emplace(x, y, z, 0);
     }
 }
@@ -77,12 +80,12 @@ auto propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel, ui
     if(!BoundCheckMap(map, x, y, z))
         return;
 
-    auto neighborLevel = GetLightFromMap(map, x, y, z);
+    auto neighborLevel = GetBlockLightFromMap(map, x, y, z);
 
     updateID(x, z, updateIDs);
 
     if(neighborLevel != 0 && neighborLevel < lightLevel) {
-        SetLightInMap(map, x, y, z, 0);
+        SetBlockLightInMap(map, x, y, z, 0);
         lightRemovalBfsQueue.emplace(x, y, z, neighborLevel);
     } else if (neighborLevel >= lightLevel) {
         lightBfsQueue.emplace(x, y, z, 0);
@@ -94,10 +97,10 @@ auto propagateRemove(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel) ->
     if(!BoundCheckMap(map, x, y, z))
         return;
 
-    auto neighborLevel = GetLightFromMap(map, x, y, z);
+    auto neighborLevel = GetSunLightFromMap(map, x, y, z);
 
     if(neighborLevel != 0 && neighborLevel < lightLevel) {
-        SetLightInMap(map, x, y, z, 0);
+        SetSunLightInMap(map, x, y, z, 0);
         sunlightRemovalBfsQueue.emplace(x, y, z, neighborLevel);
     } else if (neighborLevel >= lightLevel) {
         sunlightBfsQueue.emplace(x, y, z, 0);
@@ -124,26 +127,6 @@ auto updateRemove(uint32_t* updateIDs) -> void {
     }
 }
 
-auto updateRemove() -> void {
-    while (!lightRemovalBfsQueue.empty()) {
-        auto node = lightRemovalBfsQueue.front();
-
-        uint16_t nx = node.x;
-        uint16_t ny = node.y;
-        uint16_t nz = node.z;
-        uint8_t lightLevel = node.val;
-        lightRemovalBfsQueue.pop();
-
-        propagateRemove(nx + 1, ny, nz, lightLevel);
-        propagateRemove(nx - 1, ny, nz, lightLevel);
-        propagateRemove(nx, ny + 1, nz, lightLevel);
-        propagateRemove(nx, ny - 1, nz, lightLevel);
-        propagateRemove(nx, ny, nz + 1, lightLevel);
-        propagateRemove(nx, ny, nz - 1, lightLevel);
-    }
-}
-
-
 auto updateSpread(uint32_t* updateIDs) -> void {
     while (!lightBfsQueue.empty()) {
         auto node = lightBfsQueue.front();
@@ -151,7 +134,7 @@ auto updateSpread(uint32_t* updateIDs) -> void {
         uint16_t nx = node.x;
         uint16_t ny = node.y;
         uint16_t nz = node.z;
-        uint8_t lightLevel = GetLightFromMap(CrossCraft_World_GetMapPtr(), nx, ny, nz);
+        uint8_t lightLevel = GetBlockLightFromMap(CrossCraft_World_GetMapPtr(), nx, ny, nz);
         lightBfsQueue.pop();
 
         propagate(nx + 1, ny, nz, lightLevel, updateIDs);
@@ -160,26 +143,6 @@ auto updateSpread(uint32_t* updateIDs) -> void {
         propagate(nx, ny - 1, nz, lightLevel, updateIDs);
         propagate(nx, ny, nz + 1, lightLevel, updateIDs);
         propagate(nx, ny, nz - 1, lightLevel, updateIDs);
-    }
-}
-
-
-auto updateSpread() -> void {
-    while (!lightBfsQueue.empty()) {
-        auto node = lightBfsQueue.front();
-
-        uint16_t nx = node.x;
-        uint16_t ny = node.y;
-        uint16_t nz = node.z;
-        uint8_t lightLevel = GetLightFromMap(CrossCraft_World_GetMapPtr(), nx, ny, nz);
-        lightBfsQueue.pop();
-
-        propagate(nx + 1, ny, nz, lightLevel);
-        propagate(nx - 1, ny, nz, lightLevel);
-        propagate(nx, ny + 1, nz, lightLevel);
-        propagate(nx, ny - 1, nz, lightLevel);
-        propagate(nx, ny, nz + 1, lightLevel);
-        propagate(nx, ny, nz - 1, lightLevel);
     }
 }
 
@@ -197,8 +160,6 @@ auto updateSunlight() -> void {
 
         propagate(nx + 1, ny, nz, lightLevel);
         propagate(nx - 1, ny, nz, lightLevel);
-        propagate(nx, ny + 1, nz, lightLevel);
-        propagate(nx, ny - 1, nz, lightLevel);
         propagate(nx, ny, nz + 1, lightLevel);
         propagate(nx, ny, nz - 1, lightLevel);
     }
@@ -211,16 +172,11 @@ auto updateSunlightRemove() -> void {
         uint16_t nx = node.x;
         uint16_t ny = node.y;
         uint16_t nz = node.z;
-        int8_t lightLevel = node.val;
+        uint8_t lightLevel = node.val;
         sunlightRemovalBfsQueue.pop();
-        if(lightLevel <= 0)
-            continue;
-
 
         propagateRemove(nx + 1, ny, nz, lightLevel);
         propagateRemove(nx - 1, ny, nz, lightLevel);
-        propagateRemove(nx, ny + 1, nz, lightLevel);
-        propagateRemove(nx, ny - 1, nz, lightLevel);
         propagateRemove(nx, ny, nz + 1, lightLevel);
         propagateRemove(nx, ny, nz - 1, lightLevel);
     }
@@ -228,7 +184,7 @@ auto updateSunlightRemove() -> void {
 
 extern "C" {
 void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z, uint16_t light, uint32_t* updateIDs) {
-    SetLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, light);
+    SetBlockLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, light);
     updateID(x, z, updateIDs);
     lightBfsQueue.emplace(x, y, z, light);
 
@@ -242,7 +198,7 @@ void CrossCraft_World_RemoveLight(uint16_t x, uint16_t y, uint16_t z, uint16_t l
     auto val = GetLightFromMap(map, x, y, z);
     lightRemovalBfsQueue.emplace(x, y, z, val);
 
-    SetLightInMap(map, x, y, z, light);
+    SetBlockLightInMap(map, x, y, z, light);
     updateID(x, z, updateIDs);
 
     updateRemove(updateIDs);
@@ -260,18 +216,21 @@ void singleCheck(uint16_t x, uint16_t y, uint16_t z) {
         auto blk = GetBlockFromMap(map, x, y2, z);
 
         if(blk == 18 || (blk >= 37 && blk <= 40) || (blk >= 8 && blk <= 11)) {
-            lv -= 2;
+            if(lv >= 2)
+                lv -= 2;
+            else
+                lv = 0;
         } else if(blk != 0 && blk != 20) {
             lv = 0;
         }
 
-        auto lv2 = GetLightFromMap(map, x, y2, z);
+        auto lv2 = GetSunLightFromMap(map, x, y2, z);
 
         if(lv2 < lv) {
-            SetLightInMap(map, x, y2, z, lv);
+            SetSunLightInMap(map, x, y2, z, lv);
             sunlightRemovalBfsQueue.emplace(x, y2, z, 0);
         } else {
-            SetLightInMap(map, x, y2, z, lv);
+            SetSunLightInMap(map, x, y2, z, lv);
             sunlightBfsQueue.emplace(x, y2, z, lv);
         }
     }
@@ -279,10 +238,10 @@ void singleCheck(uint16_t x, uint16_t y, uint16_t z) {
 
 bool CrossCraft_World_CheckSunLight(uint16_t x, uint16_t y, uint16_t z) {
     singleCheck(x, y, z);
-    singleCheck(x + 1, y, z);
-    singleCheck(x - 1, y, z);
-    singleCheck(x, y, z + 1);
-    singleCheck(x, y, z - 1);
+    singleCheck(x+1, y, z);
+    singleCheck(x-1, y, z);
+    singleCheck(x, y, z+1);
+    singleCheck(x, y, z-1);
 
     updateSunlightRemove();
     updateSunlight();
@@ -306,20 +265,16 @@ void CrossCraft_World_PropagateSunLight(uint32_t tick) {
                 if(blk == 18 || (blk >= 37 && blk <= 40) || (blk >= 8 && blk <= 11)) {
                     lv -= 2;
                 } else if(blk != 0 && blk != 20) {
-                    break;
+                    lv = 0;
                 }
 
-                if(lv < 0)
-                    break;
-
-                SetLightInMap(map, x, y, z, lv);
+                SetSunLightInMap(map, x, y, z, lv);
                 sunlightBfsQueue.emplace(x, y, z, lv);
             }
         }
     }
 
     updateSunlight();
-
 }
 
 }
