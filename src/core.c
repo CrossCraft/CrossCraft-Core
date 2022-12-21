@@ -3,6 +3,8 @@
 #include <CrossCraft/world.h>
 #include <CrossCraft/entity.h>
 
+uint32_t CCtickCount;
+
 // Initializes the CrossCraft Core, including the logging system and the entity and world managers.
 void CrossCraft_Core_Init() {
     CC_Internal_Log_Init();
@@ -10,6 +12,7 @@ void CrossCraft_Core_Init() {
 
     CrossCraft_EntityMan_Init();
     CrossCraft_World_Init();
+    CCtickCount = 1000;
 }
 
 // Deinitializes the CrossCraft Core, including the entity and world managers and the logging system.
@@ -21,9 +24,15 @@ void CrossCraft_Core_Deinit() {
     CC_Internal_Log_Deinit();
 }
 
+
 // Updates the state of the CrossCraft Core, including the entity manager.
 void CrossCraft_Core_Tick() {
     CrossCraft_EntityMan_Tick();
+    CCtickCount++;
+}
+
+uint32_t CrossCraft_Core_GetTickCount() {
+    return CCtickCount;
 }
 
 static DifficultyLevel CC_DifficultyLevel = DIFFICULTY_NORMAL;

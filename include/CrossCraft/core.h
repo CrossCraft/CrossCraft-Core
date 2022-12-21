@@ -11,6 +11,7 @@ void CrossCraft_Core_Deinit();
 
 void CrossCraft_Core_Tick();
 
+uint32_t CrossCraft_Core_GetTickCount();
 
 typedef enum {
     DIFFICULTY_PEACEFUL,
