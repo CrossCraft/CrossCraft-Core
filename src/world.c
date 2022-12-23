@@ -1,11 +1,13 @@
 #include <CrossCraft/log.h>
 #include <CrossCraft/world.h>
 #include <CrossCraft/worldgen.h>
+#include <CrossCraft/player.h>
 #include <CrossCraft/indev.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 static Level level;
 
@@ -123,6 +125,7 @@ void CrossCraft_World_Create_Map(uint8_t size) {
 }
 
 #include <nbt.h>
+#include "CrossCraft/event.h"
 
 /**
  * @brief Tries to load a world
@@ -378,6 +381,200 @@ void CrossCraft_World_Spawn() {
 
                 return;
             }
+        }
+    }
+}
+
+struct ExplosionRay {
+    MCVector3 position;
+    MCVector3 direction;
+
+    float power;
+};
+
+void set_dir(MCVector3* dir, float x, float y, float z) {
+    dir->x = x;
+    dir->y = y;
+    dir->z = z;
+}
+
+float getHardness(uint8_t id) {
+    switch(id) {
+
+        case 1:
+        case 4:
+        case 48:
+            return 3.0f;
+
+        case 14:
+        case 15:
+        case 16:
+        case 56:
+        case 44:
+        case 45:
+        case 43:
+            return 4.0f;
+
+        case 41:
+        case 42:
+        case 57:
+            return 2.0f;
+
+        case 2:
+        case 3:
+        case 12:
+        case 13:
+            return 0.7f;
+
+        case 49:
+            return 100.0f;
+
+        default:
+            return 1.0f;
+    }
+}
+
+float rand_float() {
+    return (float)(rand() % 7 - 3) / 2.0f;
+}
+
+void updateID(uint16_t x, uint16_t z, uint32_t* updateIDs);
+
+
+SlotData lookup(uint8_t broken) {
+    SlotData d;
+    d.damage = 0;
+    switch (broken) {
+
+        case 2: {
+            d.type = 3;
+            d.count = 1;
+            break;
+        }
+
+        case 1: {
+            d.type = 4;
+            d.count = 1;
+            break;
+        }
+
+        case 18: {
+            d.count = 0;
+            break;
+        }
+
+        case 20: {
+            d.count = 0;
+            break;
+        }
+
+        default: {
+            d.type = broken;
+            d.count = 1;
+            break;
+        }
+    }
+
+    return d;
+}
+
+void CrossCraft_World_Explode(MCVector3 pos) {
+    struct ExplosionRay rays[64];
+    for(int i = 0; i < 64; i++){
+        rays[i].power = 12.0f;
+        rays[i].position = pos;
+
+        set_dir(&rays[i].direction, rand_float(), rand_float(), rand_float());
+    }
+
+    uint32_t udList[10];
+
+    //PLAYER CHECK
+    {
+        MCVector3 player_pos = CrossCraft_Player_GetPosition();
+
+        MCVector3 diff;
+        diff.x = player_pos.x - pos.x;
+        diff.y = player_pos.y - pos.y;
+        diff.z = player_pos.z - pos.z;
+
+        float len = sqrtf(diff.x * diff.x + diff.y * diff.y + diff.z * diff.z);
+
+        float normalized = len / 5.0f;
+
+        if(normalized <= 1.0f) {
+            float mul = 1.0f - normalized;
+
+            struct EventDamagePlayer* e = malloc(sizeof(struct EventDamagePlayer));
+            e->type = CROSSCRAFT_EVENT_TYPE_DAMAGE_PLAYER;
+            e->damage = mul * 20.0f;
+            e->direction = diff;
+
+            CrossCraft_Event_Push(CROSSCRAFT_EVENT_TYPE_DAMAGE_PLAYER, (void*)e);
+        }
+    }
+
+    //TODO: ENTITY CHECK
+
+    for(int i = 0; i < 10; i++) {
+        udList[i] = 0xFFFFFFFF;
+    }
+
+    for(int c = 0; c < 40; c++) {
+        for (int i = 0; i < 64; i++) {
+            if (rays[i].power < 0)
+                continue;
+
+            float mul = (float)c / 8.0f;
+
+            MCVector3 v = rays[i].position;
+            v.x += mul * rays[i].direction.x;
+            v.y += mul * rays[i].direction.y;
+            v.z += mul * rays[i].direction.z;
+
+            LevelMap* map = CrossCraft_World_GetMapPtr();
+            if(BoundCheckMap(map, v.x, v.y, v.z)) {
+                uint8_t blk = GetBlockFromMap(map, v.x, v.y, v.z);
+
+                if((blk >= 8 && blk <= 11)) {
+                    rays[i].power = -1.0f;
+                    continue;
+                }
+
+                if(blk == 0){
+                    rays[i].power -= 1.0f;
+                    continue;
+                }
+
+                float hardness = getHardness(blk);
+                rays[i].power -= hardness;
+
+                if(rays[i].power > 0.0f) {
+                    SetBlockInMap(map, v.x, v.y, v.z, 0);
+
+                    CrossCraft_World_CheckSunLight(v.x, v.y, v.z);
+                    CrossCraft_World_RemoveLight(v.x, v.y, v.z, 0, udList);
+                    updateID((uint16_t)v.x, (uint16_t)v.z, udList);
+
+                    if((rand() % 10) <= 2) {
+                        SlotData data = lookup(blk);
+
+                        MCVector3 vel = {0, 0, 0};
+                        CrossCraft_EntityMan_AddEntity(CrossCraft_Entity_CreateDrop(v, vel, &data));
+                    }
+
+                }
+            }
+        }
+    }
+
+
+    for(int i = 0; i < 10; i++) {
+        if(udList[i] != 0xFFFFFFFF) {
+            struct EventUpdateChunk *e = malloc(sizeof(struct EventUpdateChunk));
+            e->type = CROSSCRAFT_EVENT_TYPE_UPDATE_CHUNK;
+            e->id = udList[i];
+            CrossCraft_Event_Push(CROSSCRAFT_EVENT_TYPE_UPDATE_CHUNK, (struct Event*)e);
         }
     }
 }

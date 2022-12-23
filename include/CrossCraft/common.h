@@ -19,7 +19,7 @@ typedef struct{
 } MCVector2;
 
 typedef struct {
-    uint16_t type;
+    int16_t type;
     uint16_t damage;
     int8_t count;
 } SlotData;

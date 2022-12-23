@@ -44,6 +44,12 @@ bool CrossCraft_World_TryLoad(uint8_t slot, const char* prefix);
  */
 void CrossCraft_World_Save(uint8_t slot, const char* prefix);
 
+/**
+ * Explode at position
+ * @param pos Position to explode at
+ */
+void CrossCraft_World_Explode(MCVector3 pos);
+
 typedef enum {
     WORLD_TYPE_ORIGINAL = 0,
     WORLD_TYPE_FLAT = 1,

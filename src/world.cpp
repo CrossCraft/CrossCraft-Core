@@ -14,33 +14,7 @@ std::queue <LightNode> lightRemovalBfsQueue;
 std::queue <LightNode> sunlightBfsQueue;
 std::queue <LightNode> sunlightRemovalBfsQueue;
 
-
-auto encodeID(uint16_t x, uint16_t z) -> uint32_t {
-    uint16_t nx = x / 16;
-    uint16_t ny = z / 16;
-    uint32_t id = nx << 16 | (ny & 0xFFFF);
-    return id;
-}
-
-auto checkAddID(uint32_t* updateIDs, uint32_t id) -> void {
-    // Check that the ID is not already existing
-    for(int i = 0; i < 10; i++) {
-        if(id == updateIDs[i])
-            return;
-    }
-
-    // Find a slot to insert.
-    for(int i = 0; i < 10; i++) {
-        if(updateIDs[i] == 0xFFFFFFFF) {
-            updateIDs[i] = id;
-            return;
-        }
-    }
-}
-
-auto updateID(uint16_t x, uint16_t z, uint32_t* updateIDs) -> void {
-    checkAddID(updateIDs, encodeID(x, z));
-}
+extern "C" auto updateID(uint16_t x, uint16_t z, uint32_t* updateIDs) -> void;
 
 auto propagate(uint16_t x, uint16_t y, uint16_t z, uint16_t lightLevel, uint32_t* updateIDs) -> void {
     auto map = CrossCraft_World_GetMapPtr();
@@ -183,6 +157,35 @@ auto updateSunlightRemove() -> void {
 }
 
 extern "C" {
+
+auto encodeID(uint16_t x, uint16_t z) -> uint32_t {
+    uint16_t nx = x / 16;
+    uint16_t ny = z / 16;
+    uint32_t id = nx << 16 | (ny & 0xFFFF);
+    return id;
+}
+
+auto checkAddID(uint32_t* updateIDs, uint32_t id) -> void {
+    // Check that the ID is not already existing
+    for(int i = 0; i < 10; i++) {
+        if(id == updateIDs[i])
+            return;
+    }
+
+    // Find a slot to insert.
+    for(int i = 0; i < 10; i++) {
+        if(updateIDs[i] == 0xFFFFFFFF) {
+            updateIDs[i] = id;
+            return;
+        }
+    }
+}
+
+auto updateID(uint16_t x, uint16_t z, uint32_t* updateIDs) -> void {
+    checkAddID(updateIDs, encodeID(x, z));
+}
+
+
 void CrossCraft_World_AddLight(uint16_t x, uint16_t y, uint16_t z, uint16_t light, uint32_t* updateIDs) {
     SetBlockLightInMap(CrossCraft_World_GetMapPtr(), x, y, z, light);
     updateID(x, z, updateIDs);

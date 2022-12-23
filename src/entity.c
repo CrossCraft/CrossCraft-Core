@@ -173,7 +173,11 @@ void TNTUpdate(Entity* e) {
     e->base.update(e);
 
     if(((TNT*)e->next)->lifeTime == 0) {
-        //TODO: EXPLODE!
+        MCVector3 translated = e->base.pos;
+        translated.x /= 32.0f;
+        translated.y /= 32.0f;
+        translated.z /= 32.0f;
+        CrossCraft_World_Explode(translated);
     }
 }
 

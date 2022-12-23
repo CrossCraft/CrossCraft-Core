@@ -9,7 +9,9 @@ extern "C" {
 enum EventType {
     CROSSCRAFT_EVENT_TYPE_ADD_ENTITY,
     CROSSCRAFT_EVENT_TYPE_REMOVE_ENTITY,
-    CROSSCRAFT_EVENT_TYPE_UPDATE_ENTITY
+    CROSSCRAFT_EVENT_TYPE_UPDATE_ENTITY,
+    CROSSCRAFT_EVENT_TYPE_UPDATE_CHUNK,
+    CROSSCRAFT_EVENT_TYPE_DAMAGE_PLAYER,
 };
 
 struct Event{
@@ -21,9 +23,20 @@ struct EventEntity {
     Entity* e;
 };
 
+struct EventUpdateChunk {
+    uint32_t type;
+    uint32_t id;
+};
+
 struct EventEntityRemove {
     uint32_t type;
     uint32_t eid;
+};
+
+struct EventDamagePlayer {
+    uint32_t type;
+    MCVector3 direction;
+    uint16_t damage;
 };
 
 typedef void (*EventListener)(struct Event*);

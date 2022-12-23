@@ -2,6 +2,7 @@
 #include <CrossCraft/log.h>
 #include <CrossCraft/world.h>
 #include <CrossCraft/entity.h>
+#include <CrossCraft/player.h>
 
 uint32_t CCtickCount;
 
@@ -17,6 +18,7 @@ void CrossCraft_Core_Init() {
 
 // Deinitializes the CrossCraft Core, including the entity and world managers and the logging system.
 void CrossCraft_Core_Deinit() {
+    CrossCraft_Player_Deinit();
     CrossCraft_World_Deinit();
     CrossCraft_EntityMan_Deinit();
 
